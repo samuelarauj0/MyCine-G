@@ -1,0 +1,275 @@
+Você é um desenvolvedor Sênior full-stack, você irá criar o “MyCine G” um site de avaliação de filmes e series gamificado usando as tecnologias: (Next.js + Nest.js + Prisma + MySQL) com gamificação (XP, níveis, ranks) para avaliações de filmes e séries
+
+== 1) OBJETIVO ==
+Crie um monorepo chamado "mycine-g" contendo:
+- /backend: API em Nest.js 10 (TypeScript) + Prisma ORM + MySQL 8 + JWT (RBAC com ADMIN/USER).
+- /frontend: App em Next.js 14 (App Router, TypeScript) + Tailwind + shadcn/ui.
+Tema visual DARK com cores predominantes: preto, roxo e azul escuro. Nome do produto: **MyCine G**.
+
+Funcionalidades principais:
+- Listar/visualizar filmes & séries, média de avaliações, e comentários.
+- Usuário pode cadastrar e logar.
+- Usuário pode avaliar (nota 1–5) e comentar.
+- **Somente ADMIN** pode: criar/editar/excluir filmes/séries, e remover avaliações/comentários.
+- Sistema de **desafios** e **gamificação**: XP ao avaliar/comentar/cumprir desafios; usuário sobe de **nível** e recebe **rank**.
+
+== 2) ENTREGÁVEIS ==
+- Monorepo (pnpm workspaces OU npm com scripts na raiz).
+- Docker & docker-compose com MySQL 8 + Adminer/PhpMyAdmin.
+- Prisma schema completo + migrations + seed (admin + alguns títulos + desafios).
+- README com instruções de execução (Docker e local), variáveis .env, rotas e passos de seed.
+- Testes básicos (e2e simples no backend para auth e CRUD de títulos; unit de services).
+- Postman/Insomnia collection exportada OU arquivo OpenAPI/Swagger exposto pela API.
+- Lint/format (ESLint + Prettier) e Husky opcional.
+
+== 3) STACK & PADRÕES ==
+BACKEND (/backend)
+- Nest.js 10, TypeScript, Arquitetura modular (modules: Auth, Users, Titles, Reviews, Challenges, Gamification).
+- Prisma ORM (MySQL 8).
+- Autenticação: JWT (access + refresh), senhas com bcrypt.
+- Validação: class-validator/class-transformer nos DTOs.
+- Documentação: Swagger em /docs.
+- RBAC: Guard e Decorator @Roles('ADMIN').
+
+FRONTEND (/frontend)
+- Next.js 14 App Router + TS.
+- Tailwind + shadcn/ui (Buttons, Cards, Dialog/Sheet, Badge, Progress, Input, Textarea).
+- State: React Query (TanStack Query) para cache das chamadas à API.
+- Formulários: react-hook-form + zod.
+- Proteção de rotas via middleware e verificação de token JWT.
+- Tema DARK com paleta:
+  - --bg: #0B0B0E (preto)
+  - --primary: #6D28D9 (roxo)
+  - --muted-blue: #0F172A (azul escuro)
+  - texto principal #E5E7EB; texto secundário #9CA3AF
+- Acessibilidade básica (labels, foco, contraste).
+
+== 4) BANCO (PRISMA) ==
+Implemente o schema abaixo (ajuste nomes se necessário):
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(USER)
+  xp           Int      @default(0)
+  level        Int      @default(1)
+  rank         Rank     @default(BRONZE)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  reviews      Review[]
+  challenges   UserChallenge[]
+}
+
+enum UserRole { USER ADMIN }
+enum Rank { BRONZE SILVER GOLD PLATINUM DIAMOND MASTER GRANDMASTER LEGEND }
+enum TitleType { MOVIE SERIES }
+
+model Title {
+  id            String        @id @default(cuid())
+  name          String
+  description   String
+  type          TitleType
+  releaseDate   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  categories    Category[]    @relation(references: [id])
+  reviews       Review[]
+  avgRating     Float         @default(0) // manter cache atualizado via hook/transaction
+}
+
+model Category {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  titles Title[] @relation(references: [id])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  title     Title    @relation(fields: [titleId], references: [id])
+  titleId   String
+  rating    Int      // 1..5
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ChallengeKind { DAILY WEEKLY ONCE }
+enum ChallengeStatus { IN_PROGRESS COMPLETED CLAIMED }
+
+model Challenge {
+  id          String        @id @default(cuid())
+  title       String
+  description String
+  kind        ChallengeKind
+  // criteria em JSON (ex.: { "type":"RATE_N_TITLES","count":3,"category":"Ação" })
+  criteria    Json
+  xpReward    Int
+  activeFrom  DateTime?
+  activeTo    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       UserChallenge[]
+}
+
+model UserChallenge {
+  id          String          @id @default(cuid())
+  user        User            @relation(fields: [userId], references: [id])
+  userId      String
+  challenge   Challenge       @relation(fields: [challengeId], references: [id])
+  challengeId String
+  progress    Int             @default(0)
+  status      ChallengeStatus @default(IN_PROGRESS)
+  completedAt DateTime?
+  claimedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+== 5) GAMIFICAÇÃO (REGRAS FECHADAS – IMPLEMENTAR NO BACKEND) ==
+Cálculo de nível (suave, progressivo):
+- XP total para alcançar o nível L: XP(L) = 100 * L * (L - 1) / 2
+  (ou seja: L2=100 xp; L3=300; L4=600; L5=1000; etc.)
+- Dado o xp total do usuário, calcule o nível mais alto tal que XP(L) <= xp.
+- Rank por nível:
+  - BRONZE: 1–4
+  - SILVER: 5–9
+  - GOLD: 10–14
+  - PLATINUM: 15–19
+  - DIAMOND: 20–24
+  - MASTER: 25–29
+  - GRANDMASTER: 30–39
+  - LEGEND: 40+
+
+Fontes de XP (com anti-abuso):
+- Criar primeira avaliação de um título (por usuário): +30 XP.
+- Novo comentário/avaliação **no mesmo título em dias diferentes**: +15 XP.
+- Comentário extra no mesmo dia, mesmo título: +5 XP (máx. 2 extras/dia por título).
+- Completar perfil (nome + email verificado): +20 XP (uma vez).
+- Desafio DAILY “Avalie 2 títulos no dia”: +40 XP.
+- Desafio WEEKLY “Avalie 7 títulos na semana”: +150 XP.
+- **Teto diário**: 300 XP por usuário.
+- **Cooldown**: 60s entre avaliações do mesmo usuário.
+- Comentários precisam ter min. 20 caracteres para dar XP.
+- Editar avaliação/comentário **não** concede XP adicional.
+- Admin não recebe XP.
+
+== 6) ENDPOINTS (BACKEND) ==
+Auth:
+- POST /auth/register { name, email, password }
+- POST /auth/login { email, password } -> { accessToken, refreshToken }
+- POST /auth/refresh { refreshToken }
+- GET /auth/me (JWT)
+
+Users:
+- GET /users/:id (ADMIN ou dono)
+- PATCH /users/me { name } – atualiza perfil
+- GET /leaderboard?limit=50 – ranking por XP/nível
+
+Titles (ADMIN para mutações):
+- GET /titles?search=&type=&category=&page=&pageSize=
+- GET /titles/:id
+- POST /titles { name, description, type, releaseDate, categories[] } (ADMIN)
+- PUT /titles/:id { name?, description?, type?, releaseDate?, categories? } (ADMIN)
+- DELETE /titles/:id (ADMIN)
+
+Reviews/Comments:
+- GET /titles/:id/reviews?page=&pageSize=
+- POST /titles/:id/reviews { rating (1..5), comment } (USER) – aplica regras de XP/anti-abuso e atualiza avgRating
+- PUT /reviews/:id { rating?, comment? } (apenas autor ou ADMIN; sem XP)
+- DELETE /reviews/:id (autor ou ADMIN; ADMIN pode excluir qualquer uma)
+
+Challenges/Gamificação:
+- GET /challenges (lista ativas; filtros por kind)
+- GET /challenges/me (progresso do usuário)
+- POST /challenges/:id/claim (USER; só se status = COMPLETED; concede xpReward respeitando teto)
+- GET /gamification/me (retorna xp, level, rank, nextLevelXp)
+
+Admin extra:
+- POST /admin/challenges … (CRUD completo de desafios – ADMIN)
+- GET /admin/stats (contagens resumidas: usuários, títulos, reviews, média global)
+
+Respostas da API: sempre JSON padronizado { data, error?, meta? }. Use códigos HTTP corretos e mensagens legíveis.
+
+== 7) FRONTEND (PÁGINAS/FLUXOS) ==
+Rotas (App Router):
+- / (Home): grid de destaques, filtro por tipo/categoria, busca.
+- /titles: listagem com busca/filtros/paginação.
+- /titles/[id]: capa/título, média de avaliações, reviews (comentar/avaliar logado), barra de progresso de nível do usuário, badges/rank.
+- /auth/login, /auth/register.
+- /profile: dados do usuário, XP, nível, rank, progresso de desafios, histórico recente.
+- /challenges: diários/semanais/únicos; botão “Concluir/Claim” quando elegível.
+- /leaderboard: top usuários por XP/nível.
+- /admin/titles: CRUD (create/edit/delete).
+- /admin/challenges: CRUD de desafios.
+- Headers: avatar com menu (Perfil, Desafios, Leaderboard, Logout). Se logado, não mostrar “Login/Registrar”.
+
+UI:
+- Cards para títulos; badge “Movie/Series”; estrelas (1–5) com média; contador de reviews.
+- Form de avaliação (rating + textarea) com validação zod (min 20 chars).
+- Toasters para feedback.
+- Página dark com gradientes discretos roxo/azul.
+
+== 8) SEED ==
+- Usuário ADMIN:
+  - email: admin@mycineg.com
+  - senha: Admin@123 (hash via bcrypt)
+- 6 categorias (Ação, Comédia, Drama, Ficção, Animação, Suspense).
+- Pelo menos 6 títulos variados (3 filmes, 3 séries) com categorias.
+- 2 desafios DAILY e 2 WEEKLY ativos.
+- 3 usuários comuns com algumas reviews de exemplo.
+- Garanta que o seed atualiza avgRating corretamente.
+
+== 9) REGRAS DE NEGÓCIO & QUALIDADE ==
+- Média de avaliações de um título = média aritmética das ratings; mantenha campo cache (avgRating) e atualize em transação ao criar/editar/deletar review.
+- Paginação padrão: pageSize=12 (títulos) e 10 (reviews).
+- Sanitizar e validar inputs (backend DTOs e zod no frontend).
+- Retornar erros consistentes (ex.: { error: { code, message, details? } }).
+- Testes básicos:
+  - Auth (register/login/refresh).
+  - Titles (CRUD – ADMIN).
+  - Reviews (criar, não ultrapassar teto diário, cooldown).
+  - Challenges (claim elegível/inelegível).
+- Segurança: rate limit básico por IP nos endpoints de auth/reviews (Nest Throttler).
+- CORS habilitado para o frontend.
+
+== 10) EXECUÇÃO ==
+Arquivos .env de exemplo:
+
+/backend/.env
+DATABASE_URL="mysql://root:root@localhost:3306/mycineg"
+JWT_SECRET="supersecretjwt"
+JWT_EXPIRES_IN="15m"
+JWT_REFRESH_SECRET="superrefresh"
+JWT_REFRESH_EXPIRES_IN="7d"
+
+./docker-compose.yml deve subir:
+- mysql:8 com user root/root, db mycineg
+- adminer: acessível em http://localhost:8080
+Scripts:
+- pnpm i (raiz instala workspaces) ou npm install por app
+- pnpm -w run dev: docker-compose up -d; gerar prisma; rodar backend (:3001) e frontend (:3000)
+- Backend: prisma migrate dev && prisma db seed
+- Frontend: variáveis de API_BASE_URL
+
+== 11) CHECKLIST DE ACEITE ==
+- [ ] CRUD completo de títulos protegido por ADMIN (Nest Guard).
+- [ ] Registro/login/refresh funcionando; tokens guardados no front com renovação automática.
+- [ ] Avaliação/comentário com validação, cooldown e tetos de XP atendidos; avgRating atualiza.
+- [ ] Páginas públicas: Home, Titles, TitleDetail. Páginas privadas: Profile, Challenges, Leaderboard. Páginas admin: Titles, Challenges.
+- [ ] Gamificação: endpoint /gamification/me retorna xp, level, rank e nextLevelXp coerentes com fórmula; desafios podem ser “claimed”.
+- [ ] Docker sobe banco + adminer; seed cria admin e dados.
+- [ ] README explica tudo (instalação, envs, scripts, rotas, testes, Swagger).
+
+== 12) EXTRA (OPCIONAL, SE COUBER) ==
+- Upload de poster (S3 local/minio) para títulos.
+- Cache (HTTP SWR) nas listagens.
+- Internationalization pronto para pt-BR (mensagens e datas).
+
+IMPORTANTE:
+- Produza código **executável** e pronto para rodar, com foco em DX (dev experience).
+- Não simplifique as regras de XP/níveis/ranks; implemente-as conforme descrito.
+- Se algo ficar ambíguo, escolha a opção mais coerente com o restante e documente no README.

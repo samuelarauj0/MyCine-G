@@ -1,6 +1,6 @@
-
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, TitleType, ChallengeKind } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { title } from 'process';
 
 const prisma = new PrismaClient();
 
@@ -15,11 +15,11 @@ async function main() {
     create: {
       name: 'Admin MyCine G',
       email: 'admin@mycine-g.com',
-      password: adminPassword,
+      passwordHash: adminPassword,
       role: 'ADMIN',
       xp: 5000,
       level: 50,
-      rank: 'Mestre',
+      rank: 'MASTER',
     },
   });
 
@@ -31,11 +31,11 @@ async function main() {
     create: {
       name: 'João Silva',
       email: 'user@mycine-g.com',
-      password: userPassword,
+      passwordHash: userPassword,
       role: 'USER',
       xp: 250,
       level: 3,
-      rank: 'Prata',
+      rank: 'SILVER',
     },
   });
 
@@ -43,54 +43,58 @@ async function main() {
   const titles = [
     {
       title: 'The Godfather',
+      name: 'The Godfather',
       description: 'A saga da família Corleone, uma das mais poderosas famílias da máfia americana.',
-      type: 'MOVIE',
-      genre: 'Drama/Crime',
-      releaseYear: 1972,
+      type: TitleType.MOVIE,
+      releaseDate: new Date('1972-03-24'),
+      director: 'Francis Ford Coppola',
     },
     {
       title: 'Breaking Bad',
+      name: 'Breaking Bad',
       description: 'Um professor de química se torna um fabricante de metanfetamina.',
-      type: 'SERIES',
-      genre: 'Drama/Crime',
-      releaseYear: 2008,
+      type: TitleType.SERIES,
+      releaseDate: new Date('2008-01-20'),
+      director: 'Vince Gilligan',
     },
     {
       title: 'Pulp Fiction',
+      name: 'Pulp Fiction',
       description: 'Histórias entrelaçadas de crime e redenção em Los Angeles.',
-      type: 'MOVIE',
-      genre: 'Crime/Drama',
-      releaseYear: 1994,
+      type: TitleType.MOVIE,
+      releaseDate: new Date('1994-10-14'),
+      director: 'Quentin Tarantino',
     },
     {
       title: 'Game of Thrones',
+      name: 'Game of Thrones',
       description: 'Reinos lutam pelo controle do Trono de Ferro em Westeros.',
-      type: 'SERIES',
-      genre: 'Fantasy/Drama',
-      releaseYear: 2011,
+      type: TitleType.SERIES, 
+      releaseDate: new Date('2011-04-17'),
+      director: 'David Benioff',
     },
     {
       title: 'The Dark Knight',
+      name: 'The Dark Knight',
       description: 'Batman enfrenta o Coringa em Gotham City.',
-      type: 'MOVIE',
-      genre: 'Action/Crime',
-      releaseYear: 2008,
+      type: TitleType.MOVIE,
+      releaseDate: new Date('2008-07-18'),
+      director: 'Christopher Nolan',
     },
     {
       title: 'Stranger Things',
+      name: 'Stranger Things',
       description: 'Crianças enfrentam forças sobrenaturais nos anos 80.',
-      type: 'SERIES',
-      genre: 'Sci-Fi/Horror',
-      releaseYear: 2016,
+      type: TitleType.SERIES,
+      releaseDate: new Date('2016-07-15'),
+      director: 'The Duffer Brothers',
     },
   ];
 
   const createdTitles = [];
   for (const titleData of titles) {
-    const title = await prisma.title.upsert({
-      where: { title: titleData.title },
-      update: {},
-      create: titleData,
+    const title = await prisma.title.create({
+      data: titleData,
     });
     createdTitles.push(title);
   }
@@ -135,7 +139,7 @@ async function main() {
     {
       title: 'Primeira Avaliação',
       description: 'Faça sua primeira avaliação de filme ou série',
-      type: 'UNIQUE',
+      type: ChallengeKind.ONCE,
       targetValue: 1,
       xpReward: 50,
       isActive: true,
@@ -143,7 +147,7 @@ async function main() {
     {
       title: 'Crítico Diário',
       description: 'Avalie 3 títulos em um dia',
-      type: 'DAILY',
+      type: ChallengeKind.DAILY,
       targetValue: 3,
       xpReward: 30,
       isActive: true,
@@ -151,7 +155,7 @@ async function main() {
     {
       title: 'Maratonista Semanal',
       description: 'Avalie 10 títulos em uma semana',
-      type: 'WEEKLY',
+      type: ChallengeKind.WEEKLY,
       targetValue: 10,
       xpReward: 100,
       isActive: true,
@@ -159,15 +163,15 @@ async function main() {
     {
       title: 'Veterano Cinéfilo',
       description: 'Avalie 50 títulos no total',
-      type: 'UNIQUE',
+      type: ChallengeKind.ONCE,
       targetValue: 50,
       xpReward: 200,
       isActive: true,
     },
-    {
+     {
       title: 'Especialista',
       description: 'Avalie 100 títulos no total',
-      type: 'UNIQUE',
+      type: ChallengeKind.ONCE,
       targetValue: 100,
       xpReward: 500,
       isActive: true,
@@ -175,10 +179,8 @@ async function main() {
   ];
 
   for (const challengeData of challenges) {
-    await prisma.challenge.upsert({
-      where: { title: challengeData.title },
-      update: {},
-      create: challengeData,
+    await prisma.challenge.create({
+      data: challengeData,
     });
   }
 

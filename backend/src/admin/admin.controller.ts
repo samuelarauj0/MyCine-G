@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Get,
@@ -31,16 +30,16 @@ export class AdminController {
   @Get('users')
   getAllUsers(@Query('page') page?: number, @Query('limit') limit?: number) {
     return this.adminService.getAllUsers(
-      page ? parseInt(page) : 1,
-      limit ? parseInt(limit) : 20,
+      page ? parseInt(page.toString()) : 1,
+      limit ? parseInt(limit.toString()) : 20,
     );
   }
 
   @Get('reviews')
   getAllReviews(@Query('page') page?: number, @Query('limit') limit?: number) {
     return this.adminService.getAllReviews(
-      page ? parseInt(page) : 1,
-      limit ? parseInt(limit) : 20,
+      page ? parseInt(page.toString()) : 1,
+      limit ? parseInt(limit.toString()) : 20,
     );
   }
 

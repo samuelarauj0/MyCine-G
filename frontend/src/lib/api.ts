@@ -136,12 +136,17 @@ class ApiService {
     return this.api.get('/challenges')
   }
 
-  async getUserChallenges(): Promise<AxiosResponse<UserChallenge[]>> {
-    return this.api.get('/challenges/user')
+  async getUserChallenges(): Promise<UserChallenge[]> {
+    const response = await this.api.get('/challenges/me')
+    return response.data
+  }
+
+  async claimChallengeReward(challengeId: string): Promise<AxiosResponse<any>> {
+    return this.api.post(`/challenges/${challengeId}/claim`)
   }
 
   // Gamification
-  async getLeaderboard(limit = 10): Promise<AxiosResponse<LeaderboardEntry[]>> {
+  async getLeaderboard(limit = 50): Promise<AxiosResponse<LeaderboardEntry[]>> {
     return this.api.get(`/gamification/leaderboard?limit=${limit}`)
   }
 

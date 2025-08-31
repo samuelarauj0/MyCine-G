@@ -6,9 +6,9 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Star, Play, TrendingUp, Award } from 'lucide-react'
+import { Star, Play, TrendingUp, Award, Trophy } from 'lucide-react'
 import { Title } from '@/types'
-import { api } from '@/lib/api'
+import { apiService } from '@/lib/api'
 
 export default function HomePage() {
   const [featuredTitles, setFeaturedTitles] = useState<Title[]>([])
@@ -20,8 +20,8 @@ export default function HomePage() {
 
   const loadFeaturedTitles = async () => {
     try {
-      const response = await api.getTitles({ limit: 6 })
-      setFeaturedTitles(response.data || [])
+      const response = await apiService.getTitles(1, 6)
+      setFeaturedTitles(response.data.titles || [])
     } catch (error) {
       console.error('Error loading featured titles:', error)
     } finally {

@@ -6,14 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Trophy, Medal, Award, Crown } from 'lucide-react'
-import { api } from '@/lib/api'
+import { apiService } from '@/lib/api'
 import type { User } from '@/types'
 
-interface LeaderboardUser extends User {
-  totalXp: number
+interface LeaderboardUser {
+  id: string
+  name: string
+  xp: number
   level: number
   rank: string
-  reviewsCount: number
+  _count: {
+    reviews: number
+  }
 }
 
 const getRankIcon = (position: number) => {
@@ -46,8 +50,11 @@ const getRankColor = (rank: string) => {
 export default function LeaderboardPage() {
   const { data: leaderboard, isLoading } = useQuery({
     queryKey: ['leaderboard'],
-    queryFn: () => api.get<LeaderboardUser[]>('/gamification/leaderboard').then(res => res.data)
-  })
+    queryFn: async () => {
+      const response = await apiService.getLeaderboard(50)
+      return response.data
+    }
+  });
 
   if (isLoading) {
     return (
@@ -84,20 +91,20 @@ export default function LeaderboardPage() {
       {/* Top 3 Podium */}
       {leaderboard && leaderboard.length >= 3 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {leaderboard.slice(0, 3).map((user, index) => (
-            <Card key={user.id} className={`${index === 0 ? 'md:order-2 ring-2 ring-primary' : index === 1 ? 'md:order-1' : 'md:order-3'}`}>
+          {leaderboard.slice(0, 3).map((entry, index) => (
+            <Card key={entry.id} className={`${index === 0 ? 'md:order-2 ring-2 ring-primary' : index === 1 ? 'md:order-1' : 'md:order-3'}`}>
               <CardContent className="p-6 text-center">
                 <div className="flex justify-center mb-4">
                   {getRankIcon(index + 1)}
                 </div>
-                <h3 className="font-semibold text-lg mb-2">{user.username}</h3>
-                <Badge className={`${getRankColor(user.rank)} text-white mb-3`}>
-                  {user.rank}
+                <h3 className="font-semibold text-lg mb-2">{entry.user.name}</h3>
+                <Badge className={`${getRankColor(entry.rank)} text-white mb-3`}>
+                  {entry.rank}
                 </Badge>
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <div>Nível {user.level}</div>
-                  <div>{user.totalXp.toLocaleString()} XP</div>
-                  <div>{user.reviewsCount} avaliações</div>
+                  <div>{user.xp.toLocaleString()} XP</div>
+                  <div>{user._count.reviews} avaliações</div>
                 </div>
               </CardContent>
             </Card>
@@ -107,9 +114,8 @@ export default function LeaderboardPage() {
 
       {/* Full Leaderboard */}
       <div className="space-y-4">
-        {leaderboard?.map((user, index) => (
-          <Card key={user.id} className={index < 3 ? 'hidden md:block' : ''}>
-            <CardContent className="p-6">
+        {leaderboard.map((entry, index) => (
+            <Card key={entry.user.id} className={`${index === 0 ? 'md:order-2 ring-2 ring-primary' : index === 1 ? 'md:order-1' : 'md:order-3'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2 min-w-[3rem]">
@@ -120,13 +126,13 @@ export default function LeaderboardPage() {
                   </div>
                   
                   <div>
-                    <h3 className="font-semibold text-lg">{user.username}</h3>
+                    <h3 className="font-semibold text-lg">{entry.user.name}</h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge className={`${getRankColor(user.rank)} text-white text-xs`}>
-                        {user.rank}
+                      <Badge className={`${getRankColor(entry.rank)} text-white text-xs`}>
+                        {entry.rank}
                       </Badge>
                       <span className="text-sm text-muted-foreground">
-                        Nível {user.level}
+                        Nível {entry.level}
                       </span>
                     </div>
                   </div>
@@ -134,11 +140,9 @@ export default function LeaderboardPage() {
 
                 <div className="text-right space-y-1">
                   <div className="text-lg font-bold text-primary">
-                    {user.totalXp.toLocaleString()} XP
+                    {entry.totalXp.toLocaleString()} XP
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {user.reviewsCount} avaliações
-                  </div>
+                  <div>{entry.user._count?.reviews || 0} avaliações</div>
                 </div>
               </div>
             </CardContent>

@@ -19,7 +19,7 @@ localPort = 3000
 externalPort = 80
 
 [workflows]
-runButton = "Start Backend Only"
+runButton = "Start Backend"
 
 [[workflows.workflow]]
 name = "Start Backend Only"
@@ -29,3 +29,34 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd backend && npm install && npm run start:dev"
+
+[[workflows.workflow]]
+name = "Start Backend"
+author = 46860078
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && npm install && npx prisma generate && npx prisma db push && npm run db:seed && npm run start:dev"
+
+[[workflows.workflow]]
+name = "Start Frontend"
+author = 46860078
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd frontend && npm install && npm run dev"
+
+[[workflows.workflow]]
+name = "Full Stack Dev"
+author = 46860078
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && npm install && npx prisma generate && npx prisma db push && npm run db:seed && npm run start:dev"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd frontend && npm install && npm run dev"

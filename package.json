@@ -1,27 +1,27 @@
+
 {
-  "name": "nextjs-13-replit",
-  "version": "0.1.0",
+  "name": "mycine-g",
+  "version": "1.0.0",
+  "description": "MyCine G - Gamified movie and series rating platform",
   "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "react": "^18",
-    "react-dom": "^18",
-    "next": "14.0.4"
+    "dev": "npm run docker:up && npm run backend:migrate && npm run backend:seed && concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "backend:dev": "cd backend && npm run start:dev",
+    "frontend:dev": "cd frontend && npm run dev",
+    "backend:migrate": "cd backend && npx prisma migrate dev",
+    "backend:seed": "cd backend && npx prisma db seed",
+    "backend:generate": "cd backend && npx prisma generate",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "format": "npm run format --workspaces"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "autoprefixer": "^10.0.1",
-    "postcss": "^8",
-    "tailwindcss": "^3.3.0",
-    "eslint": "^8",
-    "eslint-config-next": "14.0.4"
+    "concurrently": "^8.2.2"
   }
 }

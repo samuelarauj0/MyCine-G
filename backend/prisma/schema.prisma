@@ -1,0 +1,133 @@
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(USER)
+  xp           Int      @default(0)
+  level        Int      @default(1)
+  rank         Rank     @default(BRONZE)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  reviews      Review[]
+  challenges   UserChallenge[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum Rank {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+  MASTER
+  GRANDMASTER
+  LEGEND
+}
+
+enum TitleType {
+  MOVIE
+  SERIES
+}
+
+model Title {
+  id          String     @id @default(cuid())
+  name        String
+  description String     @db.Text
+  type        TitleType
+  releaseDate DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  categories  Category[] @relation("TitleCategories")
+  reviews     Review[]
+  avgRating   Float      @default(0)
+
+  @@map("titles")
+}
+
+model Category {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  titles Title[] @relation("TitleCategories")
+
+  @@map("categories")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  title     Title    @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  titleId   String
+  rating    Int      // 1..5
+  comment   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, titleId])
+  @@map("reviews")
+}
+
+enum ChallengeKind {
+  DAILY
+  WEEKLY
+  ONCE
+}
+
+enum ChallengeStatus {
+  IN_PROGRESS
+  COMPLETED
+  CLAIMED
+}
+
+model Challenge {
+  id          String          @id @default(cuid())
+  title       String
+  description String          @db.Text
+  kind        ChallengeKind
+  criteria    Json
+  xpReward    Int
+  activeFrom  DateTime?
+  activeTo    DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  users       UserChallenge[]
+
+  @@map("challenges")
+}
+
+model UserChallenge {
+  id          String          @id @default(cuid())
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  challenge   Challenge       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  challengeId String
+  progress    Int             @default(0)
+  status      ChallengeStatus @default(IN_PROGRESS)
+  completedAt DateTime?
+  claimedAt   DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([userId, challengeId])
+  @@map("user_challenges")
+}

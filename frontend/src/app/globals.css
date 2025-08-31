@@ -1,0 +1,93 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 217 19% 4%;      /* #0B0B0E - preto */
+    --foreground: 220 13% 91%;     /* #E5E7EB - texto principal */
+    
+    --card: 217 19% 7%;
+    --card-foreground: 220 13% 91%;
+    
+    --popover: 217 19% 7%;
+    --popover-foreground: 220 13% 91%;
+    
+    --primary: 262 83% 58%;         /* #6D28D9 - roxo */
+    --primary-foreground: 210 20% 98%;
+    
+    --secondary: 222 84% 4.9%;      /* #0F172A - azul escuro */
+    --secondary-foreground: 220 13% 91%;
+    
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 220 9% 64%; /* #9CA3AF - texto secundário */
+    
+    --accent: 215 27.9% 16.9%;
+    --accent-foreground: 220 13% 91%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 20% 98%;
+    
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    --ring: 262 83% 58%;
+    
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/20;
+  }
+  
+  .btn-primary {
+    @apply bg-primary hover:bg-primary/90 text-primary-foreground;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary hover:bg-secondary/80 text-secondary-foreground;
+  }
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out;
+}
